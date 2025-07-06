@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Portal - BORABU TTC</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: #333;
+    }
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(to bottom, #6b48ff, #ff6f61);
+      color: #fff;
+      padding: 20px;
+      box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid #ffd700;
+      margin-bottom: 10px;
+    }
+    .sidebar h2 {
+      font-size: 24px;
+      margin-bottom: 30px;
+      text-align: center;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      color: #fff;
+      padding: 15px;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.1);
+      margin-bottom: 10px;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    .sidebar a i, .sidebar button i {
+      margin-right: 10px;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .main-content {
+      flex: 1;
+      padding: 30px;
+    }
+    .section {
+      display: none;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .section.active {
+      display: block;
+    }
+    .section h1 {
+      font-size: 28px;
+      color: #6b48ff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+    .section h1 i {
+      margin-right: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background: #6b48ff;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    @media (max-width: 768px) {
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+      .sidebar {
+        width: 200px;
+      }
+      .main-content {
+        padding: 15px;
+      }
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 20px;
+      background: linear-gradient(to right, #ff6f61, #ff9f61);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+      display: flex;
+      align-items: center;
+    }
+    button i {
+      margin-right: 8px;
+    }
+    button:hover {
+      background: linear-gradient(to right, #ff9f61, #ff6f61);
+    }
+    .edit-btn {
+      padding: 8px 15px;
+      background: #6b48ff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .edit-btn:hover {
+      background: #5a3de6;
+    }
+    .pdf-btn {
+      padding: 8px 15px;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .pdf-btn:hover {
+      background: #219653;
+    }
+    .excel-btn {
+      padding: 8px 15px;
+      background: #3498db;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .excel-btn:hover {
+      background: #2980b9;
+    }
+    .error-message {
+      color: #ff4444;
+      font-size: 16px;
+      margin: 15px 0;
+      padding: 10px;
+      background: #ffebee;
+      border-radius: 5px;
+    }
+    .success-message {
+      color: #00cc00;
+      font-size: 16px;
+      margin: 15px 0;
+      padding: 10px;
+      background: #e8f5e9;
+      border-radius: 5px;
+    }
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      z-index: 1001;
+      display: none;
+    }
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: none;
+    }
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .loading-screen.hidden {
+      display: none;
+    }
+    .add-student-form {
+      display: block;
+    }
+    .form-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border-left: 4px solid #6b48ff;
+    }
+    .form-section h3 {
+      font-size: 18px;
+      color: #6b48ff;
+      margin-bottom: 10px;
+    }
+    .form-section label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .form-section label i {
+      margin-right: 8px;
+      color: #6b48ff;
+    }
+    .full-width {
+      grid-column: span 2;
+    }
+    .search-bar {
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 10px;
+    }
+    .subject-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .subject-row input[type="number"],
+    .subject-row input[type="text"] {
+      width: 80px;
+      margin-left: 5px;
+    }
+    .scores-table {
+      margin-top: 15px;
+    }
+    .guide-section {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f5f7fa;
+      border-radius: 8px;
+      border-left: 4px solid #6b48ff;
+    }
+    .guide-section h2 {
+      color: #6b48ff;
+      margin-bottom: 10px;
+    }
+    .dropdown {
+      margin-bottom: 15px;
+    }
+    .dropdown select {
+      width: 100%;
+      padding: 8px;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .dropdown-content {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .dropdown-content.show {
+      display: block;
+    }
+    .dropdown-content p {
+      margin: 5px 0;
+      line-height: 1.5;
+    }
+    .results-table {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .results-table th, .results-table td {
+      white-space: nowrap;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  </div>
+  <div class="popup-overlay" id="popupOverlay" onclick="hidePopup()"></div>
+  <div class="popup" id="popupMessage"></div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://img.icons8.com/color/80/000000/teacher.png" alt="Teacher Icon">
+        <p id="teacherName"></p>
+      </div>
+      <h2>Teacher Portal</h2>
+      <a href="#" onclick="showSection('guide')"><i class="fas fa-info-circle"></i> Guide</a>
+      <a href="#" onclick="showSection('students')"><i class="fas fa-users"></i> Students</a>
+      <a href="#" onclick="showSection('addStudent')"><i class="fas fa-user-plus"></i> Add Student</a>
+      <a href="#" onclick="showSection('marks')"><i class="fas fa-chart-line"></i> Upload Marks</a>
+      <a href="#" onclick="showSection('announcements')"><i class="fas fa-bullhorn"></i> Announcements</a>
+      <a href="#" onclick="showSection('results')"><i class="fas fa-file-alt"></i> Results</a>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="main-content">
+      <div id="guide" class="section active">
+        <h1><i class="fas fa-info-circle"></i> Teacher Guide</h1>
+        <div class="guide-section">
+          <h2>Welcome to the Teacher Portal!</h2>
+          <p>This section provides helpful guidance on using the portal. Select a topic below to learn more.</p>
+          <div class="dropdown">
+            <select onchange="toggleDropdown(this)">
+              <option value="">Select a Topic</option>
+              <option value="addStudent">How to Add a Student?</option>
+              <option value="uploadMarks">How to Upload Marks?</option>
+              <option value="addAnnouncement">How to Add an Announcement?</option>
+            </select>
+            <div id="addStudentContent" class="dropdown-content">
+              <p><strong>Steps to Add a Student:</strong></p>
+              <p>1. Navigate to the 'Add Student' section from the sidebar.</p>
+              <p>2. Fill in all required fields under Personal, Contact, Parental, Residence, and Financial Information.</p>
+              <p>3. Click the 'Add Student' button to save the data to the system.</p>
+              <p><em>Tip:</em> Ensure the Reg No is unique and follows the format (e.g., AID/00119/025).</p>
+            </div>
+            <div id="uploadMarksContent" class="dropdown-content">
+              <p><strong>Steps to Upload Marks:</strong></p>
+              <p>1. Go to the 'Upload Marks' section from the sidebar.</p>
+              <p>2. Select the year, student, and term from the dropdowns.</p>
+              <p>3. Enter CAT (if applicable) and Exam marks, then assign grades for each subject (e.g., English, Kiswahili, Mathematics, Science and Technology, etc.).</p>
+              <p>4. Click 'Upload Marks' to submit. Use 'Edit Marks' to modify existing records.</p>
+              <p><em>Tip:</em> Grades should be in A-F format with optional + or - (e.g., A+, B-).</p>
+            </div>
+            <div id="addAnnouncementContent" class="dropdown-content">
+              <p><strong>Steps to Add an Announcement:</strong></p>
+              <p>1. Navigate to the 'Announcements' section from the sidebar.</p>
+              <p>2. Choose 'General' or 'Individual' announcement type.</p>
+              <p>3. For individual announcements, select a student; then enter a title and message.</p>
+              <p>4. Click 'Add Announcement' to publish.</p>
+              <p><em>Tip:</em> Use clear titles to make announcements easy to find.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="students" class="section">
+        <h1><i class="fas fa-users"></i> Students</h1>
+        <input type="text" id="searchStudent" class="search-bar" placeholder="Search by Reg No or Name..." onkeyup="searchStudents()">
+        <select id="yearSelect" onchange="loadStudents()">
+          <option value="form1">Year 1</option>
+          <option value="form2">Year 2</option>
+          <option value="form3">Year 3</option>
+          <option value="form4">Year 4</option>
+        </select>
+        <div id="studentsMessage" class="error-message"></div>
+        <table id="studentsTable">
+          <thead>
+            <tr>
+              <th>Reg No</th>
+              <th>Name</th>
+              <th>Stream</th>
+              <th>Year</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsBody"></tbody>
+        </table>
+        <div id="editStudentForm" style="display: none; margin-top: 20px;">
+          <h3 style="font-size: 18px;">Edit Student</h3>
+          <input id="editRegNo" type="text" disabled>
+          <input id="editName" type="text" placeholder="Name" required>
+          <select id="editGender" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+          <input id="editPassword" type="password" placeholder="New Password">
+          <select id="editYear" required>
+            <option value="form1">Year 1</option>
+            <option value="form2">Year 2</option>
+            <option value="form3">Year 3</option>
+            <option value="form4">Year 4</option>
+          </select>
+          <input id="editStream" type="text" placeholder="Stream" required>
+          <button onclick="saveStudentEdits()">Save Changes</button>
+          <div id="editStudentMessage" class="error-message"></div>
+        </div>
+      </div>
+      <div id="addStudent" class="section">
+        <h1><i class="fas fa-user-plus"></i> Add Student</h1>
+        <div class="add-student-form">
+          <div class="form-section">
+            <h3>Personal Information</h3>
+            <label><i class="fas fa-id-card"></i> Reg No</label><input id="newRegNo" type="text" placeholder="Reg No (e.g., AID/00119/025)" class="full-width" required>
+            <label><i class="fas fa-user"></i> Name</label><input id="newName" type="text" placeholder="Full Name" required>
+            <label><i class="fas fa-venus-mars"></i> Gender</label><select id="newGender" required>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+            <label><i class="fas fa-praying-hands"></i> Religion</label><select id="newReligion" required>
+              <option value="Christian">Christian</option>
+              <option value="Muslim">Muslim</option>
+              <option value="Hindu">Hindu</option>
+              <option value="Other">Other</option>
+            </select>
+            <label><i class="fas fa-graduation-cap"></i> Year</label><select id="newYear" required>
+              <option value="form1">Year 1</option>
+              <option value="form2">Year 2</option>
+              <option value="form3">Year 3</option>
+              <option value="form4">Year 4</option>
+            </select>
+            <label><i class="fas fa-stream"></i> Stream</label><input id="newStream" type="text" placeholder="Stream (e.g., Victors)" required>
+            <label><i class="fas fa-lock"></i> Password</label><input id="newPassword" type="password" placeholder="Password" required>
+          </div>
+          <div class="form-section">
+            <h3>Contact Information</h3>
+            <label><i class="fas fa-phone"></i> Phone Number</label><input id="newPhone" type="tel" placeholder="Phone (e.g., 0712345678)" required>
+            <label><i class="fas fa-envelope"></i> Email</label><input id="newEmail" type="email" placeholder="Student Email" required>
+            <label><i class="fas fa-phone-alt"></i> Emergency Contact</label><input id="newEmergencyContact" type="tel" placeholder="Emergency Contact" required>
+          </div>
+          <div class="form-section">
+            <h3>Parental Information</h3>
+            <label><i class="fas fa-users"></i> Parent Name</label><input id="newParentName" type="text" placeholder="Parent Name" required>
+            <label><i class="fas fa-phone"></i> Parent Phone</label><input id="newParentPhone" type="tel" placeholder="Parent Phone" required>
+            <label><i class="fas fa-envelope"></i> Parent Email</label><input id="newParentEmail" type="email" placeholder="Parent Email" required>
+            <label><i class="fas fa-briefcase"></i> Parent Occupation</label><input id="newParentOccupation" type="text" placeholder="Parent Occupation" required>
+            <label><i class="fas fa-heart"></i> Parent Marital Status</label><select id="newParentMaritalStatus" required>
+              <option value="Married">Married</option>
+              <option value="Single">Single</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+            </select>
+            <label><i class="fas fa-user-tie"></i> Guardian Relationship</label><input id="newGuardianRelationship" type="text" placeholder="Relationship (e.g., Father)" required>
+          </div>
+          <div class="form-section">
+            <h3>Residence Information</h3>
+            <label><i class="fas fa-map-marker-alt"></i> County</label><input id="newCounty" type="text" placeholder="County (e.g., Kisii)" required>
+            <label><i class="fas fa-home"></i> Physical Address</label><textarea id="newAddress" placeholder="Physical Address" required></textarea>
+            <label><i class="fas fa-city"></i> Town</label><input id="newTown" type="text" placeholder="Town/City" required>
+          </div>
+          <div class="form-section">
+            <h3>Financial Information</h3>
+            <label><i class="fas fa-hand-holding-usd"></i> Sponsor</label><input id="newSponsor" type="text" placeholder="Sponsor (e.g., Self/Church)" required>
+            <label><i class="fas fa-money-bill-wave"></i> Total Fees</label><input id="newTotalFees" type="number" placeholder="Total Expected Fees (KES)" required>
+          </div>
+          <button onclick="addStudent()" class="full-width"><i class="fas fa-plus"></i> Add Student</button>
+        </div>
+        <div id="addStudentMessage" class="error-message"></div>
+      </div>
+      <div id="marks" class="section">
+        <h1><i class="fas fa-chart-line"></i> Upload Marks</h1>
+        <select id="marksYearSelect" onchange="loadMarksForm()">
+          <option value="form1">Year 1</option>
+          <option value="form2">Year 2</option>
+          <option value="form3">Year 3</option>
+          <option value="form4">Year 4</option>
+        </select>
+        <select id="marksStudentSelect" onchange="updateMarksForm()">
+          <option value="">Select a student</option>
+        </select>
+        <select id="termSelect" onchange="updateMarksForm()">
+          <option value="term1">Term 1</option>
+          <option value="term2">Term 2</option>
+          <option value="term3">Term 3</option>
+        </select>
+        <div id="marksForm"></div>
+        <div id="scoresTable" class="scores-table"></div>
+        <button id="uploadMarksBtn" onclick="uploadMarks()"><i class="fas fa-upload"></i> Upload Marks</button>
+        <button id="editMarksBtn" style="display: none;" onclick="enableEditMode()"><i class="fas fa-edit"></i> Edit Marks</button>
+        <div id="marksMessage" class="error-message"></div>
+      </div>
+      <div id="announcements" class="section">
+        <h1 style="font-size: 28px; color: #333;"><i class="fas fa-bullhorn"></i> Announcements</h1>
+        <select id="announcementType" onchange="loadAnnouncementForm()">
+          <option value="general">General</option>
+          <option value="individual">Individual</option>
+        </select>
+        <select id="announcementStudent" style="display: none;"></select>
+        <input id="announcementTitle" type="text" placeholder="Title">
+        <textarea id="announcementMessage" placeholder="Message"></textarea>
+        <button onclick="addAnnouncement()">Add Announcement</button>
+        <div id="announcementsMessage" class="error-message"></div>
+      </div>
+      <div id="results" class="section">
+        <h1><i class="fas fa-file-alt"></i> Results</h1>
+        <select id="resultsYearSelect" onchange="loadResults()">
+          <option value="form1">Year 1</option>
+          <option value="form2">Year 2</option>
+          <option value="form3">Year 3</option>
+          <option value="form4">Year 4</option>
+        </select>
+        <div id="resultsMessage" class="error-message"></div>
+        <div id="resultsTableContainer" class="results-table">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Reg No</th>
+                <th>Name</th>
+                <th>Stream</th>
+                <th>English</th>
+                <th>Kiswahili</th>
+                <th>Mathematics</th>
+                <th>Science and Technology</th>
+                <th>Agriculture</th>
+                <th>Home Science</th>
+                <th>Religious Education</th>
+                <th>Social Studies</th>
+                <th>Physical and Health Education</th>
+                <th>Art and Craft</th>
+                <th>Music</th>
+                <th>Indigenous Language</th>
+                <th>Foreign Languages</th>
+                <th>Child Development and Psychology</th>
+                <th>Curriculum Studies</th>
+                <th>Educational Resources</th>
+                <th>ICT Integration in Education</th>
+                <th>Educational Assessment</th>
+                <th>Research Skills</th>
+                <th>Inclusive Education</th>
+                <th>Educational Leadership and Management</th>
+                <th>Sociological and Philosophical Foundations</th>
+                <th>Historical and Comparative Foundations</th>
+                <th>Micro Teaching</th>
+                <th>Practicum</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <button id="downloadResultsPdfBtn" onclick="downloadResultsPDF()" class="pdf-btn"><i class="fas fa-file-pdf"></i> Download PDF</button>
+        <button id="downloadResultsExcelBtn" onclick="downloadResultsExcel()" class="excel-btn"><i class="fas fa-file-excel"></i> Download Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCi9NWfDwbWSByd_R7ueNkLcQsFlBJ5_VA",
+      authDomain: "web-reg-cbf2f.firebaseapp.com",
+      databaseURL: "https://web-reg-cbf2f-default-rtdb.firebaseio.com",
+      projectId: "web-reg-cbf2f",
+      storageBucket: "web-reg-cbf2f.firebasestorage.app",
+      messagingSenderId: "431303341740",
+      appId: "1:431303341740:web:542070e4c471cd7c8ad109",
+      measurementId: "G-164GMVZQY3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const loadingScreen = document.getElementById("loadingScreen");
+    const popupOverlay = document.getElementById("popupOverlay");
+    const popupMessage = document.getElementById("popupMessage");
+
+    // Modified authentication check to match Genesis code
+    if (localStorage.getItem("userType") !== "teacher") {
+      window.location.href = "index.html";
+    }
+
+    const teacherEmail = localStorage.getItem("username") || "Teacher";
+    const teacherName = teacherEmail.split("@")[0].replace(/\d/g, "");
+    document.getElementById("teacherName").textContent = teacherName;
+
+    const subjects = [
+      "English", "Kiswahili", "Mathematics", "Science and Technology", "Agriculture", 
+      "Home Science", "Religious Education", "Social Studies", "Physical and Health Education", 
+      "Art and Craft", "Music", "Indigenous Language", "Foreign Languages", 
+      "Child Development and Psychology", "Curriculum Studies", "Educational Resources", 
+      "ICT Integration in Education", "Educational Assessment", "Research Skills", 
+      "Inclusive Education", "Educational Leadership and Management", 
+      "Sociological and Philosophical Foundations", "Historical and Comparative Foundations", 
+      "Micro Teaching", "Practicum"
+    ];
+
+    function showSection(section) {
+      document.querySelectorAll(".section").forEach(div => div.classList.remove("active"));
+      document.getElementById(section).classList.add("active");
+    }
+
+    function showMessage(elementId, message, isError = true) {
+      const messageDiv = document.getElementById(elementId);
+      messageDiv.textContent = message;
+      messageDiv.style.color = isError ? "#ff4444" : "#00cc00";
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function showPopup(message, isError = true) {
+      popupMessage.textContent = message;
+      popupMessage.className = isError ? "error-message" : "success-message";
+      popupOverlay.style.display = "block";
+      popupMessage.style.display = "block";
+      setTimeout(hidePopup, isError ? 3000 : 5000);
+    }
+
+    function hidePopup() {
+      popupOverlay.style.display = "none";
+      popupMessage.style.display = "none";
+    }
+
+    function validateRegNo(regNo) {
+      const invalidChars = /[.#$\[\]]/;
+      return !invalidChars.test(regNo);
+    }
+
+    async function addStudent() {
+      const regNo = document.getElementById("newRegNo").value.trim();
+      const normalizedRegNo = regNo.replace(/\//g, "_");
+      const name = document.getElementById("newName").value.trim();
+      const password = document.getElementById("newPassword").value.trim();
+      const form = document.getElementById("newYear").value;
+      const stream = document.getElementById("newStream").value.trim();
+      const gender = document.getElementById("newGender").value;
+      const religion = document.getElementById("newReligion").value;
+      const phone = document.getElementById("newPhone").value.trim();
+      const email = document.getElementById("newEmail").value.trim();
+      const emergencyContact = document.getElementById("newEmergencyContact").value.trim();
+      const parentName = document.getElementById("newParentName").value.trim();
+      const parentPhone = document.getElementById("newParentPhone").value.trim();
+      const parentEmail = document.getElementById("newParentEmail").value.trim();
+      const parentOccupation = document.getElementById("newParentOccupation").value.trim();
+      const parentMaritalStatus = document.getElementById("newParentMaritalStatus").value;
+      const guardianRelationship = document.getElementById("newGuardianRelationship").value.trim();
+      const county = document.getElementById("newCounty").value.trim();
+      const address = document.getElementById("newAddress").value.trim();
+      const town = document.getElementById("newTown").value.trim();
+      const sponsor = document.getElementById("newSponsor").value.trim();
+      const totalFees = parseInt(document.getElementById("newTotalFees").value);
+
+      if (!regNo || !name || !password || !form || !stream || !gender || !religion || !phone || !email || !emergencyContact || !parentName || !parentPhone || !parentEmail || !parentOccupation || !parentMaritalStatus || !guardianRelationship || !county || !address || !town || !sponsor || !totalFees) {
+        showPopup("All fields are required.", true);
+        return;
+      }
+
+      if (!validateRegNo(normalizedRegNo)) {
+        showPopup("Invalid Reg No format. Avoid '.', '#', '$', '[', or ']'.", true);
+        return;
+      }
+
+      try {
+        const studentRef = db.ref("users/students/" + normalizedRegNo);
+        const snapshot = await studentRef.once("value");
+        if (snapshot.exists()) {
+          showPopup("Reg No already exists.", true);
+          return;
+        }
+
+        const newStudent = {
+          profile: {
+            name,
+            password,
+            gender,
+            religion,
+            phone,
+            email,
+            emergencyContact,
+            parentName,
+            parentPhone,
+            parentEmail,
+            parentOccupation,
+            parentMaritalStatus,
+            guardianRelationship,
+            county,
+            address,
+            town
+          },
+          form,
+          stream,
+          fees: {
+            sponsor,
+            totalExpected: totalFees,
+            transactions: []
+          },
+          academics: {},
+          marks: {}
+        };
+
+        await studentRef.set(newStudent);
+        showPopup("Student added successfully!", false);
+        document.getElementById("newRegNo").value = "";
+        document.getElementById("newName").value = "";
+        document.getElementById("newGender").value = "Male";
+        document.getElementById("newReligion").value = "Christian";
+        document.getElementById("newYear").value = "form1";
+        document.getElementById("newStream").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("newPhone").value = "";
+        document.getElementById("newEmail").value = "";
+        document.getElementById("newEmergencyContact").value = "";
+        document.getElementById("newParentName").value = "";
+        document.getElementById("newParentPhone").value = "";
+        document.getElementById("newParentEmail").value = "";
+        document.getElementById("newParentOccupation").value = "";
+        document.getElementById("newParentMaritalStatus").value = "Married";
+        document.getElementById("newGuardianRelationship").value = "";
+        document.getElementById("newCounty").value = "";
+        document.getElementById("newAddress").value = "";
+        document.getElementById("newTown").value = "";
+        document.getElementById("newSponsor").value = "";
+        document.getElementById("newTotalFees").value = "";
+        await loadStudents();
+      } catch (error) {
+        console.error("Add student error:", error);
+        showPopup(`Failed to add student: ${error.message}`, true);
+      }
+    }
+
+    async function loadStudents() {
+      const form = document.getElementById("yearSelect").value;
+      const studentsBody = document.getElementById("studentsBody");
+      studentsBody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form) {
+            studentsList.push({
+              regNo,
+              name: student.profile.name,
+              stream: student.stream,
+              form: student.form
+            });
+          }
+        });
+
+        studentsBody.innerHTML = "";
+        if (studentsList.length === 0) {
+          studentsBody.innerHTML = `<tr><td colspan="5">No students found in ${form.replace("form", "Year ")}.</td></tr>`;
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentsList.forEach(student => {
+          studentsBody.innerHTML += `<tr>
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td>${student.stream}</td>
+            <td>${student.form.replace("form", "Year ")}</td>
+            <td><button class="edit-btn" onclick="editStudent('${student.regNo}', '${student.name}', '${student.form}', '${student.stream}')">Edit</button><button class="pdf-btn" onclick="downloadStudentPDF('${student.regNo}')"><i class="fas fa-file-pdf"></i> PDF</button></td>
+          </tr>`;
+        });
+      } catch (error) {
+        console.error("Load students error:", error);
+        studentsBody.innerHTML = `<tr><td colspan="5">Failed to load students: ${error.message}</td></tr>`;
+        showPopup(`Error: ${error.message}`, true);
+      }
+    }
+
+    function searchStudents() {
+      const searchTerm = document.getElementById("searchStudent").value.toLowerCase();
+      const form = document.getElementById("yearSelect").value;
+      const studentsBody = document.getElementById("studentsBody");
+      studentsBody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+      db.ref("users/students").once("value", (snapshot) => {
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form && (student.profile.name.toLowerCase().includes(searchTerm) || regNo.toLowerCase().includes(searchTerm))) {
+            studentsList.push({
+              regNo,
+              name: student.profile.name,
+              stream: student.stream,
+              form: student.form
+            });
+          }
+        });
+
+        studentsBody.innerHTML = "";
+        if (studentsList.length === 0) {
+          studentsBody.innerHTML = `<tr><td colspan="5">No students found matching '${searchTerm}' in ${form.replace("form", "Year ")}.</td></tr>`;
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentsList.forEach(student => {
+          studentsBody.innerHTML += `<tr>
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td>${student.stream}</td>
+            <td>${student.form.replace("form", "Year ")}</td>
+            <td><button class="edit-btn" onclick="editStudent('${student.regNo}', '${student.name}', '${student.form}', '${student.stream}')">Edit</button><button class="pdf-btn" onclick="downloadStudentPDF('${student.regNo}')"><i class="fas fa-file-pdf"></i> PDF</button></td>
+          </tr>`;
+        });
+      }).catch(error => {
+        studentsBody.innerHTML = `<tr><td colspan="5">Failed to search students: ${error.message}</td></tr>`;
+        showPopup(`Error: ${error.message}`, true);
+      });
+    }
+
+    function editStudent(regNo, name, form, stream) {
+      const editForm = document.getElementById("editStudentForm");
+      editForm.style.display = "block";
+      document.getElementById("editRegNo").value = regNo;
+      document.getElementById("editName").value = name;
+      db.ref(`users/students/${regNo.replace(/\//g, "_")}/profile/gender`).once("value", (snapshot) => {
+        const gender = snapshot.val() || "Male";
+        document.getElementById("editGender").value = gender;
+      }).catch(error => {
+        document.getElementById("editGender").value = "Male";
+        console.error("Error fetching gender:", error);
+      });
+      document.getElementById("editPassword").value = "";
+      document.getElementById("editYear").value = form;
+      document.getElementById("editStream").value = stream;
+    }
+
+    async function saveStudentEdits() {
+      const regNo = document.getElementById("editRegNo").value;
+      const normalizedRegNo = regNo.replace(/\//g, "_");
+      const name = document.getElementById("editName").value.trim();
+      const gender = document.getElementById("editGender").value;
+      const password = document.getElementById("editPassword").value;
+      const form = document.getElementById("editYear").value;
+      const stream = document.getElementById("editStream").value.trim();
+
+      if (!name || !form || !stream || !gender) {
+        showPopup("Name, Gender, Year, and Stream are required.", true);
+        return;
+      }
+
+      try {
+        const updates = { profile: { name, gender }, form, stream };
+        if (password) updates.profile.password = password;
+
+        await db.ref(`users/students/${normalizedRegNo}`).update(updates);
+        showPopup("Student updated successfully!", false);
+        document.getElementById("editStudentForm").style.display = "none";
+        await loadStudents();
+      } catch (error) {
+        console.error("Save student edits error:", error);
+        showPopup(`Failed to update student: ${error.message}`, true);
+      }
+    }
+
+    async function loadMarksForm() {
+      const form = document.getElementById("marksYearSelect").value;
+      const studentSelect = document.getElementById("marksStudentSelect");
+      studentSelect.innerHTML = "<option>Loading...</option>";
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form) {
+            studentsList.push({
+              regNo,
+              name: student.profile.name,
+              stream: student.stream
+            });
+          }
+        });
+
+        studentSelect.innerHTML = "";
+        if (studentsList.length === 0) {
+          studentSelect.innerHTML = `<option value="">No students found in ${form.replace("form", "Year ")}.</option>`;
+          document.getElementById("marksForm").innerHTML = "";
+          document.getElementById("scoresTable").innerHTML = "";
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentSelect.innerHTML = `<option value="">Select a student</option>`;
+        studentsList.forEach(student => {
+          studentSelect.innerHTML += `<option value="${student.regNo}|${student.stream}">${student.name} (${student.regNo})</option>`;
+        });
+
+        updateMarksForm();
+      } catch (error) {
+        console.error("Load marks form error:", error);
+        document.getElementById("marksForm").innerHTML = `<div class="error-message">Failed to load marks form: ${error.message}</div>`;
+      }
+    }
+
+    function updateMarksForm() {
+      const term = document.getElementById("termSelect").value;
+      const studentSelect = document.getElementById("marksStudentSelect");
+      const marksForm = document.getElementById("marksForm");
+      const scoresTable = document.getElementById("scoresTable");
+      const uploadBtn = document.getElementById("uploadMarksBtn");
+      const editBtn = document.getElementById("editMarksBtn");
+
+      marksForm.innerHTML = "";
+      scoresTable.innerHTML = "";
+      uploadBtn.style.display = "inline-block";
+      editBtn.style.display = "none";
+
+      if (!studentSelect.value) {
+        marksForm.innerHTML = "<p>Please select a student to upload marks for.</p>";
+        return;
+      }
+
+      const [regNo] = studentSelect.value.split("|");
+      const normalizedRegNo = regNo.replace(/\//g, "_");
+
+      marksForm.innerHTML = `<div class="marks-form"><h3 style="font-size: 18px; margin-bottom: 10px;">Mark Sheet</h3>`;
+      subjects.forEach((subject, index) => {
+        marksForm.innerHTML += `
+          <div class="subject-row">
+            <strong>${index + 1}. ${subject}</strong>
+            ${term !== "term3" ? `<input type="number" id="cat_${subject}" placeholder="CAT" min="0" max="100">` : ""}
+            <input type="number" id="exam_${subject}" placeholder="Exam" min="0" max="100">
+            <input type="text" id="grade_${subject}" placeholder="Grade" pattern="[A-F][+-]?" title="Enter grade like A, A+, B-, etc.">
+          </div>`;
+      });
+      marksForm.innerHTML += `</div>`;
+
+      db.ref(`users/students/${normalizedRegNo}/academics/${term}`).once("value", snapshot => {
+        const marksData = snapshot.val() || {};
+        let scoresHTML = "<h3 style='font-size: 18px; margin-bottom: 10px;'>Current Scores</h3>";
+        scoresHTML += "<table><thead><tr><th>Subject</th><th>CAT</th><th>Exam</th><th>Grade</th></tr></thead><tbody>";
+        subjects.forEach(subject => {
+          const cat = marksData.cat?.[subject] || "-";
+          const exam = marksData.exam?.[subject] || "-";
+          const grade = marksData.grades?.[subject] || "-";
+          scoresHTML += `<tr>
+            <td>${subject}</td>
+            <td>${cat}</td>
+            <td>${exam}</td>
+            <td>${grade}</td>
+          </tr>`;
+          if (term !== "term3" && cat !== "-") {
+            document.getElementById(`cat_${subject}`).value = cat;
+          }
+          if (exam !== "-") {
+            document.getElementById(`exam_${subject}`).value = exam;
+          }
+          if (grade !== "-") {
+            document.getElementById(`grade_${subject}`).value = grade;
+          }
+        });
+        scoresHTML += "</tbody></table>";
+        scoresTable.innerHTML = scoresHTML;
+
+        if (marksData.cat || marksData.exam || marksData.grades) {
+          uploadBtn.style.display = "none";
+          editBtn.style.display = "inline-block";
+        }
+      }).catch(error => {
+        console.error("Error loading scores:", error);
+        scoresTable.innerHTML = `<div class="error-message">Error loading scores: ${error.message}</div>`;
+      });
+    }
+
+    function enableEditMode() {
+      document.getElementById("uploadMarksBtn").style.display = "inline-block";
+      document.getElementById("editMarksBtn").style.display = "none";
+    }
+
+    async function uploadMarks() {
+      const studentSelect = document.getElementById("marksStudentSelect");
+      if (!studentSelect.value) {
+        showPopup("Please select a student to upload marks for.", true);
+        return;
+      }
+
+      const [regNo] = studentSelect.value.split("|");
+      const normalizedRegNo = regNo.replace(/\//g, "_");
+      const term = document.getElementById("termSelect").value;
+      const marks = { cat: {}, exam: {}, grades: {} };
+      let hasValidInput = false;
+
+      for (const subject of subjects) {
+        const catInput = term !== "term3" ? document.getElementById(`cat_${subject}`)?.value : null;
+        const examInput = document.getElementById(`exam_${subject}`)?.value;
+        const gradeInput = document.getElementById(`grade_${subject}`)?.value.trim().toUpperCase();
+
+        if (catInput && term !== "term3") {
+          const catValue = parseInt(catInput);
+          if (catValue >= 0 && catValue <= 100) {
+            marks.cat[subject] = catValue;
+            hasValidInput = true;
+          } else if (catInput !== "") {
+            showPopup(`Invalid CAT mark for ${subject}. Must be 0-100.`, true);
+            return;
+          }
+        }
+
+        if (examInput) {
+          const examValue = parseInt(examInput);
+          if (examValue >= 0 && examValue <= 100) {
+            marks.exam[subject] = examValue;
+            hasValidInput = true;
+          } else if (examInput !== "") {
+            showPopup(`Invalid Exam mark for ${subject}. Must be 0-100.`, true);
+            return;
+          }
+        }
+
+        if (gradeInput) {
+          const gradeMatch = gradeInput.match(/^([A-F])([+-])?$/);
+          if (gradeMatch) {
+            marks.grades[subject] = gradeMatch[1] + (gradeMatch[2] || "");
+            hasValidInput = true;
+          } else {
+            showPopup(`Invalid grade format for ${subject}. Use A-F with optional + or -.`, true);
+            return;
+          }
+        }
+      }
+
+      if (!hasValidInput) {
+        showPopup("Please enter at least one valid mark or grade.", true);
+        return;
+      }
+
+      if (Object.keys(marks.cat).length === 0) delete marks.cat;
+      if (Object.keys(marks.exam).length === 0) delete marks.exam;
+      if (Object.keys(marks.grades).length === 0) delete marks.grades;
+
+      try {
+        loadingScreen.classList.remove("hidden");
+        document.getElementById("uploadMarksBtn").disabled = true;
+
+        await db.ref(`users/students/${normalizedRegNo}/academics/${term}`).update(marks);
+        showPopup("Marks uploaded successfully to Firebase!", false);
+
+        subjects.forEach(subject => {
+          if (term !== "term3") document.getElementById(`cat_${subject}`).value = "";
+          document.getElementById(`exam_${subject}`).value = "";
+          document.getElementById(`grade_${subject}`).value = "";
+        });
+
+        document.getElementById("uploadMarksBtn").style.display = "none";
+        document.getElementById("editMarksBtn").style.display = "inline-block";
+        updateMarksForm();
+      } catch (error) {
+        console.error("Upload marks error:", error);
+        showPopup(`Failed to upload marks: ${error.message}`, true);
+      } finally {
+        loadingScreen.classList.add("hidden");
+        document.getElementById("uploadMarksBtn").disabled = false;
+      }
+    }
+
+    function loadAnnouncementForm() {
+      const typeSelect = document.getElementById("announcementType");
+      const studentSelect = document.getElementById("announcementStudent");
+      studentSelect.style.display = typeSelect.value === "individual" ? "block" : "none";
+      if (typeSelect.value !== "individual") return;
+
+      studentSelect.innerHTML = "";
+      db.ref("users/students").once("value", (snapshot) => {
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          studentsList.push({
+            regNo,
+            name: student.profile.name
+          });
+        });
+
+        if (studentsList.length === 0) {
+          studentSelect.innerHTML = `<option value="">No students found.</option>`;
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentSelect.innerHTML = `<option value="">Select a student</option>`;
+        studentsList.forEach(student => {
+          studentSelect.innerHTML += `<option value="${student.regNo}">${student.name} (${student.regNo})</option>`;
+        });
+      }).catch(error => {
+        studentSelect.innerHTML = `<option>Failed to load students: ${error.message}</option>`;
+      });
+    }
+
+    function addAnnouncement() {
+      const type = document.getElementById("announcementType").value;
+      const title = document.getElementById("announcementTitle").value.trim();
+      const message = document.getElementById("announcementMessage").value.trim();
+
+      if (!title || !message) {
+        showMessage("announcementsMessage", "Please enter both title and message.");
+        return;
+      }
+
+      const announcement = {
+        title,
+        message,
+        date: new Date().toISOString().split("T")[0],
+        teacher: teacherName
+      };
+
+      if (type === "general") {
+        db.ref("announcements/general").push(announcement)
+          .then(() => {
+            showMessage("announcementsMessage", "Announcement added successfully!", false);
+            document.getElementById("announcementTitle").value = "";
+            document.getElementById("announcementMessage").value = "";
+          })
+          .catch(error => {
+            showMessage("announcementsMessage", "Failed to add announcement: " + error.message);
+          });
+      } else {
+        const regNo = document.getElementById("announcementStudent").value;
+        if (!regNo) {
+          showMessage("announcementsMessage", "Please select a student for individual announcement.");
+          return;
+        }
+        const normalizedRegNo = regNo.replace(/\//g, "_");
+        db.ref(`announcements/individual/${normalizedRegNo}`).push(announcement)
+          .then(() => {
+            showMessage("announcementsMessage", "Announcement added successfully!", false);
+            document.getElementById("announcementTitle").value = "";
+            document.getElementById("announcementMessage").value = "";
+            document.getElementById("announcementStudent").value = "";
+          })
+          .catch(error => {
+            showMessage("announcementsMessage", "Failed to add announcement: " + error.message);
+          });
+      }
+    }
+
+    async function loadResults() {
+      const form = document.getElementById("resultsYearSelect").value;
+      const resultsBody = document.getElementById("resultsBody");
+      resultsBody.innerHTML = "<tr><td colspan='28'>Loading...</td></tr>";
+      document.getElementById("resultsMessage").textContent = "";
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form) {
+            studentsList.push({
+              regNo,
+              name: student.profile.name,
+              stream: student.stream,
+              academics: student.academics || {}
+            });
+          }
+        });
+
+        resultsBody.innerHTML = "";
+        if (studentsList.length === 0) {
+          resultsBody.innerHTML = `<tr><td colspan="28">No students found in ${form.replace("form", "Year ")}.</td></tr>`;
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentsList.forEach(student => {
+          let row = `<tr>
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td>${student.stream}</td>`;
+          subjects.forEach(subject => {
+            let mark = "-";
+            ["term1", "term2", "term3"].forEach(term => {
+              const examMark = student.academics[term]?.exam?.[subject];
+              if (examMark !== undefined && examMark !== "-") mark = examMark;
+            });
+            row += `<td>${mark}</td>`;
+          });
+          row += `</tr>`;
+          resultsBody.innerHTML += row;
+        });
+      } catch (error) {
+        console.error("Load results error:", error);
+        resultsBody.innerHTML = `<tr><td colspan="28">Failed to load results: ${error.message}</td></tr>`;
+        document.getElementById("resultsMessage").textContent = `Error: ${error.message}`;
+      }
+    }
+
+    function downloadStudentPDF(regNo) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const normalizedRegNo = regNo.replace(/\//g, "_");
+      const teacherName = document.getElementById("teacherName").textContent;
+      const date = new Date().toLocaleDateString();
+
+      loadingScreen.classList.remove("hidden");
+      db.ref(`users/students/${normalizedRegNo}`).once("value", (snapshot) => {
+        const student = snapshot.val() || {};
+        const transactions = student.fees?.transactions || [];
+        const totalPaid = Array.isArray(transactions) ? transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0) : 0;
+        const balance = (student.fees?.totalExpected || 0) - totalPaid;
+
+        doc.text("Logo not available", 10, 15);
+        doc.setFontSize(14);
+        doc.setTextColor(107, 72, 255);
+        doc.text("BORABU TEACHERS TRAINING COLLEGE", 60, 20);
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text("P.O. Box 102-40502, Nyamira Keroka, Kenya", 60, 25);
+        doc.text(`Prepared by: ${teacherName}`, 10, 40);
+        doc.text(`Date: ${date}`, 160, 40);
+
+        doc.setFontSize(12);
+        doc.text("Student Profile", 10, 60);
+        const profileData = [
+          ["Reg No", regNo],
+          ["Name", student.profile?.name || "N/A"],
+          ["Gender", student.profile?.gender || "N/A"],
+          ["Religion", student.profile?.religion || "N/A"],
+          ["Year", student.form?.replace("form", "Year ") || "N/A"],
+          ["Stream", student.stream || "N/A"],
+          ["Phone", student.profile?.phone || "N/A"],
+          ["Email", student.profile?.email || "N/A"],
+          ["Emergency Contact", student.profile?.emergencyContact || "N/A"],
+          ["Parent Name", student.profile?.parentName || "N/A"],
+          ["Parent Phone", student.profile?.parentPhone || "N/A"],
+          ["Parent Email", student.profile?.parentEmail || "N/A"],
+          ["Parent Occupation", student.profile?.parentOccupation || "N/A"],
+          ["Parent Marital Status", student.profile?.parentMaritalStatus || "N/A"],
+          ["Guardian Relationship", student.profile?.guardianRelationship || "N/A"],
+          ["County", student.profile?.county || "N/A"],
+          ["Address", student.profile?.address || "N/A"],
+          ["Town", student.profile?.town || "N/A"]
+        ];
+        doc.autoTable({
+          startY: 70,
+          body: profileData,
+          theme: 'grid',
+          styles: { cellPadding: 3, fontSize: 11, lineColor: [0, 0, 0], lineWidth: 0.1 },
+          headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+          bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 130 } }
+        });
+
+        const financialY = doc.autoTable.previous.finalY + 10;
+        doc.text("Financial Details", 10, financialY);
+        const financialData = [
+          ["Sponsor", student.fees?.sponsor || "N/A"],
+          ["Total Fees (KES)", student.fees?.totalExpected || "N/A"],
+          ["Fees Paid (KES)", totalPaid || "0"],
+          ["Balance (KES)", balance || "N/A"],
+          ["Admission Date", new Date().toLocaleDateString() || "N/A"],
+          ["Status", "Active" || "N/A"],
+          ["Remarks", "Good standing" || "N/A"]
+        ];
+        doc.autoTable({
+          startY: financialY + 5,
+          body: financialData,
+          theme: 'grid',
+          styles: { cellPadding: 3, fontSize: 11, lineColor: [0, 0, 0], lineWidth: 0.1 },
+          headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+          bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 130 } }
+        });
+
+        const signatureY = doc.autoTable.previous.finalY + 10;
+        doc.setLineWidth(0.5);
+        doc.line(10, signatureY, 70, signatureY);
+        doc.text("Director of Studies", 10, signatureY + 5);
+        doc.text("Forged Signature (for demo purposes)", 10, signatureY + 10);
+
+        doc.save(`${regNo}_profile.pdf`);
+        loadingScreen.classList.add("hidden");
+      }).catch(error => {
+        console.error("Download student PDF error:", error);
+        showPopup(`Failed to generate PDF: ${error.message}`, true);
+        loadingScreen.classList.add("hidden");
+      });
+    }
+
+    function downloadResultsPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+      const form = document.getElementById("resultsYearSelect").value;
+      const teacherName = document.getElementById("teacherName").textContent;
+      const date = new Date().toLocaleDateString();
+
+      loadingScreen.classList.remove("hidden");
+      db.ref("users/students").once("value", async (snapshot) => {
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form) {
+            studentsList.push({
+              regNo,
+              name: student.profile.name,
+              stream: student.stream,
+              academics: student.academics || {}
+            });
+          }
+        });
+
+        if (studentsList.length === 0) {
+          showPopup(`No students found in ${form.replace("form", "Year ")}`, true);
+          loadingScreen.classList.add("hidden");
+          return;
+        }
+
+        doc.text("Logo not available", 10, 15);
+        doc.setFontSize(14);
+        doc.setTextColor(107, 72, 255);
+        doc.text("BORABU TEACHERS TRAINING COLLEGE", 150, 20, { align: 'center' });
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text("P.O. Box 102-40502, Nyamira Keroka, Kenya", 150, 25, { align: 'center' });
+        doc.text(`Prepared by: ${teacherName}`, 10, 40);
+        doc.text(`Date: ${date}`, 280, 40);
+
+        const tableData = studentsList.map(student => {
+          const row = [student.regNo, student.name, student.stream];
+          subjects.forEach(subject => {
+            let mark = "-";
+            ["term1", "term2", "term3"].forEach(term => {
+              const examMark = student.academics[term]?.exam?.[subject];
+              if (examMark !== undefined && examMark !== "-") mark = examMark;
+            });
+            row.push(mark);
+          });
+          return row;
+        });
+
+        doc.autoTable({
+          head: [["Reg No", "Name", "Stream", ...subjects]],
+          body: tableData,
+          startY: 50,
+          theme: 'grid',
+          styles: { cellPadding: 2, fontSize: 8, lineColor: [0, 0, 0], lineWidth: 0.1 },
+          headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+          bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
+          columnStyles: { 
+            0: { cellWidth: 20 }, 
+            1: { cellWidth: 40 }, 
+            2: { cellWidth: 20 }, 
+            ...subjects.reduce((acc, sub, i) => ({ ...acc, [i + 3]: { cellWidth: 10 } }), {}) 
+          },
+          margin: { top: 50 }
+        });
+
+        const signatureY = doc.autoTable.previous.finalY + 10;
+        doc.setLineWidth(0.5);
+        doc.line(10, signatureY, 70, signatureY);
+        doc.text("Director of Studies", 10, signatureY + 5);
+        doc.text("Forged Signature (for demo purposes)", 10, signatureY + 10);
+
+        doc.save(`results_${form.replace("form", "Year")}_${date}.pdf`);
+        loadingScreen.classList.add("hidden");
+      }).catch(error => {
+        console.error("Download results PDF error:", error);
+        showPopup(`Failed to generate PDF: ${error.message}`, true);
+        loadingScreen.classList.add("hidden");
+      });
+    }
+
+    function downloadResultsExcel() {
+      const form = document.getElementById("resultsYearSelect").value;
+      const wb = XLSX.utils.book_new();
+      const wsData = [["BORABU TEACHERS TRAINING COLLEGE"], ["P.O. Box 102-40502, Nyamira Keroka, Kenya"], [], ["Results for " + form.replace("form", "Year ")], []];
+
+      loadingScreen.classList.remove("hidden");
+      db.ref("users/students").once("value", (snapshot) => {
+        const students = snapshot.val() || {};
+        let studentsList = [];
+
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form) {
+            studentsList.push({
+              regNo,
+              name: student.profile.name,
+              stream: student.stream,
+              academics: student.academics || {}
+            });
+          }
+        });
+
+        if (studentsList.length === 0) {
+          showPopup(`No students found in ${form.replace("form", "Year ")}`, true);
+          loadingScreen.classList.add("hidden");
+          return;
+        }
+
+        const header = ["Reg No", "Name", "Stream", ...subjects];
+        wsData.push(header);
+        studentsList.forEach(student => {
+          const row = [student.regNo, student.name, student.stream];
+          subjects.forEach(subject => {
+            let mark = "-";
+            ["term1", "term2", "term3"].forEach(term => {
+              const examMark = student.academics[term]?.exam?.[subject];
+              if (examMark !== undefined && examMark !== "-") mark = examMark;
+            });
+            row.push(mark);
+          });
+          wsData.push(row);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Results");
+        XLSX.writeFile(wb, `results_${form.replace("form", "Year")}_${new Date().toLocaleDateString()}.xlsx`);
+        loadingScreen.classList.add("hidden");
+      }).catch(error => {
+        console.error("Download results Excel error:", error);
+        showPopup(`Failed to generate Excel: ${error.message}`, true);
+        loadingScreen.classList.add("hidden");
+      });
+    }
+
+    function toggleDropdown(select) {
+      const value = select.value;
+      document.querySelectorAll(".dropdown-content").forEach(content => {
+        content.classList.remove("show");
+        if (content.id === `${value}Content`) content.classList.add("show");
+      });
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        localStorage.clear();
+        window.location.href = "index.html";
+      }).catch(error => {
+        console.error("Logout failed:", error);
+        showPopup(`Failed to log out: ${error.message}`, true);
+      });
+    }
+
+    // Initialize the page
+    loadingScreen.classList.add("hidden");
+    loadStudents();
+    loadMarksForm();
+    loadResults();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
