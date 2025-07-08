@@ -144,17 +144,6 @@
     button:hover {
       background: linear-gradient(to right, #ff9f61, #ff6f61);
     }
-    .edit-btn {
-      padding: 8px 15px;
-      background: #6b48ff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .edit-btn:hover {
-      background: #5a3de6;
-    }
     .pdf-btn {
       padding: 8px 15px;
       background: #27ae60;
@@ -322,6 +311,11 @@
       white-space: nowrap;
       padding: 8px;
     }
+    .marks-table input[type="number"],
+    .marks-table input[type="text"] {
+      width: 80px;
+      margin: 0 5px;
+    }
   </style>
 </head>
 <body>
@@ -334,7 +328,7 @@
     <div class="sidebar">
       <div class="profile">
         <img src="https://img.icons8.com/color/80/000000/teacher.png" alt="Teacher Icon">
-        <p id="teacherName"></p>
+        <p id="teacherName">Loading...</p>
       </div>
       <h2>Teacher Portal</h2>
       <a href="#" onclick="showSection('guide')"><i class="fas fa-info-circle"></i> Guide</a>
@@ -368,9 +362,9 @@
             <div id="uploadMarksContent" class="dropdown-content">
               <p><strong>Steps to Upload Marks:</strong></p>
               <p>1. Go to the 'Upload Marks' section from the sidebar.</p>
-              <p>2. Select the year, student, and term from the dropdowns.</p>
-              <p>3. Enter CAT (if applicable) and Exam marks, then assign grades for each subject (e.g., English, Kiswahili, Mathematics, Science and Technology, etc.).</p>
-              <p>4. Click 'Upload Marks' to submit. Use 'Edit Marks' to modify existing records.</p>
+              <p>2. Select the year, subject, and term from the dropdowns.</p>
+              <p>3. Enter CAT (if applicable), Exam marks, and grades for each student in the table.</p>
+              <p>4. Click 'Save Marks' to submit.</p>
               <p><em>Tip:</em> Grades should be in A-F format with optional + or - (e.g., A+, B-).</p>
             </div>
             <div id="addAnnouncementContent" class="dropdown-content">
@@ -406,25 +400,6 @@
           </thead>
           <tbody id="studentsBody"></tbody>
         </table>
-        <div id="editStudentForm" style="display: none; margin-top: 20px;">
-          <h3 style="font-size: 18px;">Edit Student</h3>
-          <input id="editRegNo" type="text" disabled>
-          <input id="editName" type="text" placeholder="Name" required>
-          <select id="editGender" required>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <input id="editPassword" type="password" placeholder="New Password">
-          <select id="editYear" required>
-            <option value="form1">Year 1</option>
-            <option value="form2">Year 2</option>
-            <option value="form3">Year 3</option>
-            <option value="form4">Year 4</option>
-          </select>
-          <input id="editStream" type="text" placeholder="Stream" required>
-          <button onclick="saveStudentEdits()">Save Changes</button>
-          <div id="editStudentMessage" class="error-message"></div>
-        </div>
       </div>
       <div id="addStudent" class="section">
         <h1><i class="fas fa-user-plus"></i> Add Student</h1>
@@ -495,18 +470,41 @@
           <option value="form3">Year 3</option>
           <option value="form4">Year 4</option>
         </select>
-        <select id="marksStudentSelect" onchange="updateMarksForm()">
-          <option value="">Select a student</option>
+        <select id="marksSubjectSelect" onchange="loadMarksForm()">
+          <option value="">Select a Subject</option>
+          <option value="English">English</option>
+          <option value="Kiswahili">Kiswahili</option>
+          <option value="Mathematics">Mathematics</option>
+          <option value="Science and Technology">Science and Technology</option>
+          <option value="Agriculture">Agriculture</option>
+          <option value="Home Science">Home Science</option>
+          <option value="Religious Education">Religious Education</option>
+          <option value="Social Studies">Social Studies</option>
+          <option value="Physical and Health Education">Physical and Health Education</option>
+          <option value="Art and Craft">Art and Craft</option>
+          <option value="Music">Music</option>
+          <option value="Indigenous Language">Indigenous Language</option>
+          <option value="Foreign Languages">Foreign Languages</option>
+          <option value="Child Development and Psychology">Child Development and Psychology</option>
+          <option value="Curriculum Studies">Curriculum Studies</option>
+          <option value="Educational Resources">Educational Resources</option>
+          <option value="ICT Integration in Education">ICT Integration in Education</option>
+          <option value="Educational Assessment">Educational Assessment</option>
+          <option value="Research Skills">Research Skills</option>
+          <option value="Inclusive Education">Inclusive Education</option>
+          <option value="Educational Leadership and Management">Educational Leadership and Management</option>
+          <option value="Sociological and Philosophical Foundations">Sociological and Philosophical Foundations</option>
+          <option value="Historical and Comparative Foundations">Historical and Comparative Foundations</option>
+          <option value="Micro Teaching">Micro Teaching</option>
+          <option value="Practicum">Practicum</option>
         </select>
-        <select id="termSelect" onchange="updateMarksForm()">
+        <select id="termSelect" onchange="loadMarksForm()">
           <option value="term1">Term 1</option>
           <option value="term2">Term 2</option>
           <option value="term3">Term 3</option>
         </select>
-        <div id="marksForm"></div>
-        <div id="scoresTable" class="scores-table"></div>
-        <button id="uploadMarksBtn" onclick="uploadMarks()"><i class="fas fa-upload"></i> Upload Marks</button>
-        <button id="editMarksBtn" style="display: none;" onclick="enableEditMode()"><i class="fas fa-edit"></i> Edit Marks</button>
+        <div id="marksTable" class="scores-table"></div>
+        <button id="saveMarksBtn" onclick="saveMarks()"><i class="fas fa-save"></i> Save Marks</button>
         <div id="marksMessage" class="error-message"></div>
       </div>
       <div id="announcements" class="section">
@@ -593,14 +591,16 @@
     const popupOverlay = document.getElementById("popupOverlay");
     const popupMessage = document.getElementById("popupMessage");
 
-    // Modified authentication check to match Genesis code
-    if (localStorage.getItem("userType") !== "teacher") {
-      window.location.href = "index.html";
-    }
-
-    const teacherEmail = localStorage.getItem("username") || "Teacher";
-    const teacherName = teacherEmail.split("@")[0].replace(/\d/g, "");
-    document.getElementById("teacherName").textContent = teacherName;
+    auth.onAuthStateChanged(user => {
+      if (!user || localStorage.getItem("userType") !== "teacher") {
+        localStorage.clear();
+        window.location.href = "index_teacher.html";
+      } else {
+        const teacherName = localStorage.getItem("teacherName") || user.displayName || user.email.split("@")[0].replace(/[^a-zA-Z0-9\s]/g, "") || "Teacher";
+        document.getElementById("teacherName").textContent = teacherName;
+        console.log(`Teacher dashboard loaded: teacherName=${teacherName}, email=${user.email}, uid=${user.uid}`);
+      }
+    });
 
     const subjects = [
       "English", "Kiswahili", "Mathematics", "Science and Technology", "Agriculture", 
@@ -783,7 +783,7 @@
             <td>${student.name}</td>
             <td>${student.stream}</td>
             <td>${student.form.replace("form", "Year ")}</td>
-            <td><button class="edit-btn" onclick="editStudent('${student.regNo}', '${student.name}', '${student.form}', '${student.stream}')">Edit</button><button class="pdf-btn" onclick="downloadStudentPDF('${student.regNo}')"><i class="fas fa-file-pdf"></i> PDF</button></td>
+            <td><button class="pdf-btn" onclick="downloadStudentPDF('${student.regNo}')"><i class="fas fa-file-pdf"></i> PDF</button></td>
           </tr>`;
         });
       } catch (error) {
@@ -828,7 +828,7 @@
             <td>${student.name}</td>
             <td>${student.stream}</td>
             <td>${student.form.replace("form", "Year ")}</td>
-            <td><button class="edit-btn" onclick="editStudent('${student.regNo}', '${student.name}', '${student.form}', '${student.stream}')">Edit</button><button class="pdf-btn" onclick="downloadStudentPDF('${student.regNo}')"><i class="fas fa-file-pdf"></i> PDF</button></td>
+            <td><button class="pdf-btn" onclick="downloadStudentPDF('${student.regNo}')"><i class="fas fa-file-pdf"></i> PDF</button></td>
           </tr>`;
         });
       }).catch(error => {
@@ -837,55 +837,18 @@
       });
     }
 
-    function editStudent(regNo, name, form, stream) {
-      const editForm = document.getElementById("editStudentForm");
-      editForm.style.display = "block";
-      document.getElementById("editRegNo").value = regNo;
-      document.getElementById("editName").value = name;
-      db.ref(`users/students/${regNo.replace(/\//g, "_")}/profile/gender`).once("value", (snapshot) => {
-        const gender = snapshot.val() || "Male";
-        document.getElementById("editGender").value = gender;
-      }).catch(error => {
-        document.getElementById("editGender").value = "Male";
-        console.error("Error fetching gender:", error);
-      });
-      document.getElementById("editPassword").value = "";
-      document.getElementById("editYear").value = form;
-      document.getElementById("editStream").value = stream;
-    }
-
-    async function saveStudentEdits() {
-      const regNo = document.getElementById("editRegNo").value;
-      const normalizedRegNo = regNo.replace(/\//g, "_");
-      const name = document.getElementById("editName").value.trim();
-      const gender = document.getElementById("editGender").value;
-      const password = document.getElementById("editPassword").value;
-      const form = document.getElementById("editYear").value;
-      const stream = document.getElementById("editStream").value.trim();
-
-      if (!name || !form || !stream || !gender) {
-        showPopup("Name, Gender, Year, and Stream are required.", true);
-        return;
-      }
-
-      try {
-        const updates = { profile: { name, gender }, form, stream };
-        if (password) updates.profile.password = password;
-
-        await db.ref(`users/students/${normalizedRegNo}`).update(updates);
-        showPopup("Student updated successfully!", false);
-        document.getElementById("editStudentForm").style.display = "none";
-        await loadStudents();
-      } catch (error) {
-        console.error("Save student edits error:", error);
-        showPopup(`Failed to update student: ${error.message}`, true);
-      }
-    }
-
     async function loadMarksForm() {
       const form = document.getElementById("marksYearSelect").value;
-      const studentSelect = document.getElementById("marksStudentSelect");
-      studentSelect.innerHTML = "<option>Loading...</option>";
+      const subject = document.getElementById("marksSubjectSelect").value;
+      const term = document.getElementById("termSelect").value;
+      const marksTable = document.getElementById("marksTable");
+
+      marksTable.innerHTML = "<p>Loading...</p>";
+
+      if (!form || !subject) {
+        marksTable.innerHTML = "<p>Please select both a year and a subject.</p>";
+        return;
+      }
 
       try {
         const snapshot = await db.ref("users/students").once("value");
@@ -898,190 +861,161 @@
             studentsList.push({
               regNo,
               name: student.profile.name,
-              stream: student.stream
+              stream: student.stream,
+              academics: student.academics || {}
             });
           }
         });
 
-        studentSelect.innerHTML = "";
+        marksTable.innerHTML = "";
         if (studentsList.length === 0) {
-          studentSelect.innerHTML = `<option value="">No students found in ${form.replace("form", "Year ")}.</option>`;
-          document.getElementById("marksForm").innerHTML = "";
-          document.getElementById("scoresTable").innerHTML = "";
+          marksTable.innerHTML = `<p>No students found in ${form.replace("form", "Year ")}.</p>`;
           return;
         }
 
-        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
-        studentSelect.innerHTML = `<option value="">Select a student</option>`;
-        studentsList.forEach(student => {
-          studentSelect.innerHTML += `<option value="${student.regNo}|${student.stream}">${student.name} (${student.regNo})</option>`;
-        });
+        let tableHTML = `<table class="marks-table">
+          <thead>
+            <tr>
+              <th>Reg No</th>
+              <th>Name</th>
+              <th>Stream</th>
+              ${term !== "term3" ? '<th>CAT</th>' : ''}
+              <th>Exam</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>`;
 
-        updateMarksForm();
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        for (const student of studentsList) {
+          const normalizedRegNo = student.regNo.replace(/\//g, "_");
+          const marksData = student.academics[term] || {};
+          const cat = marksData.cat?.[subject] || "";
+          const exam = marksData.exam?.[subject] || "";
+          const grade = marksData.grades?.[subject] || "";
+
+          tableHTML += `<tr>
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td>${student.stream}</td>
+            ${term !== "term3" ? `<td><input type="number" id="cat_${normalizedRegNo}" value="${cat}" min="0" max="100" placeholder="CAT"></td>` : ''}
+            <td><input type="number" id="exam_${normalizedRegNo}" value="${exam}" min="0" max="100" placeholder="Exam"></td>
+            <td><input type="text" id="grade_${normalizedRegNo}" value="${grade}" placeholder="Grade" pattern="[A-F][+-]?" title="Enter grade like A, A+, B-, etc."></td>
+          </tr>`;
+        }
+
+        tableHTML += "</tbody></table>";
+        marksTable.innerHTML = tableHTML;
       } catch (error) {
         console.error("Load marks form error:", error);
-        document.getElementById("marksForm").innerHTML = `<div class="error-message">Failed to load marks form: ${error.message}</div>`;
+        marksTable.innerHTML = `<div class="error-message">Failed to load marks form: ${error.message}</div>`;
       }
     }
 
-    function updateMarksForm() {
+    async function saveMarks() {
+      const form = document.getElementById("marksYearSelect").value;
+      const subject = document.getElementById("marksSubjectSelect").value;
       const term = document.getElementById("termSelect").value;
-      const studentSelect = document.getElementById("marksStudentSelect");
-      const marksForm = document.getElementById("marksForm");
-      const scoresTable = document.getElementById("scoresTable");
-      const uploadBtn = document.getElementById("uploadMarksBtn");
-      const editBtn = document.getElementById("editMarksBtn");
 
-      marksForm.innerHTML = "";
-      scoresTable.innerHTML = "";
-      uploadBtn.style.display = "inline-block";
-      editBtn.style.display = "none";
-
-      if (!studentSelect.value) {
-        marksForm.innerHTML = "<p>Please select a student to upload marks for.</p>";
+      if (!form || !subject) {
+        showPopup("Please select both a year and a subject.", true);
         return;
       }
-
-      const [regNo] = studentSelect.value.split("|");
-      const normalizedRegNo = regNo.replace(/\//g, "_");
-
-      marksForm.innerHTML = `<div class="marks-form"><h3 style="font-size: 18px; margin-bottom: 10px;">Mark Sheet</h3>`;
-      subjects.forEach((subject, index) => {
-        marksForm.innerHTML += `
-          <div class="subject-row">
-            <strong>${index + 1}. ${subject}</strong>
-            ${term !== "term3" ? `<input type="number" id="cat_${subject}" placeholder="CAT" min="0" max="100">` : ""}
-            <input type="number" id="exam_${subject}" placeholder="Exam" min="0" max="100">
-            <input type="text" id="grade_${subject}" placeholder="Grade" pattern="[A-F][+-]?" title="Enter grade like A, A+, B-, etc.">
-          </div>`;
-      });
-      marksForm.innerHTML += `</div>`;
-
-      db.ref(`users/students/${normalizedRegNo}/academics/${term}`).once("value", snapshot => {
-        const marksData = snapshot.val() || {};
-        let scoresHTML = "<h3 style='font-size: 18px; margin-bottom: 10px;'>Current Scores</h3>";
-        scoresHTML += "<table><thead><tr><th>Subject</th><th>CAT</th><th>Exam</th><th>Grade</th></tr></thead><tbody>";
-        subjects.forEach(subject => {
-          const cat = marksData.cat?.[subject] || "-";
-          const exam = marksData.exam?.[subject] || "-";
-          const grade = marksData.grades?.[subject] || "-";
-          scoresHTML += `<tr>
-            <td>${subject}</td>
-            <td>${cat}</td>
-            <td>${exam}</td>
-            <td>${grade}</td>
-          </tr>`;
-          if (term !== "term3" && cat !== "-") {
-            document.getElementById(`cat_${subject}`).value = cat;
-          }
-          if (exam !== "-") {
-            document.getElementById(`exam_${subject}`).value = exam;
-          }
-          if (grade !== "-") {
-            document.getElementById(`grade_${subject}`).value = grade;
-          }
-        });
-        scoresHTML += "</tbody></table>";
-        scoresTable.innerHTML = scoresHTML;
-
-        if (marksData.cat || marksData.exam || marksData.grades) {
-          uploadBtn.style.display = "none";
-          editBtn.style.display = "inline-block";
-        }
-      }).catch(error => {
-        console.error("Error loading scores:", error);
-        scoresTable.innerHTML = `<div class="error-message">Error loading scores: ${error.message}</div>`;
-      });
-    }
-
-    function enableEditMode() {
-      document.getElementById("uploadMarksBtn").style.display = "inline-block";
-      document.getElementById("editMarksBtn").style.display = "none";
-    }
-
-    async function uploadMarks() {
-      const studentSelect = document.getElementById("marksStudentSelect");
-      if (!studentSelect.value) {
-        showPopup("Please select a student to upload marks for.", true);
-        return;
-      }
-
-      const [regNo] = studentSelect.value.split("|");
-      const normalizedRegNo = regNo.replace(/\//g, "_");
-      const term = document.getElementById("termSelect").value;
-      const marks = { cat: {}, exam: {}, grades: {} };
-      let hasValidInput = false;
-
-      for (const subject of subjects) {
-        const catInput = term !== "term3" ? document.getElementById(`cat_${subject}`)?.value : null;
-        const examInput = document.getElementById(`exam_${subject}`)?.value;
-        const gradeInput = document.getElementById(`grade_${subject}`)?.value.trim().toUpperCase();
-
-        if (catInput && term !== "term3") {
-          const catValue = parseInt(catInput);
-          if (catValue >= 0 && catValue <= 100) {
-            marks.cat[subject] = catValue;
-            hasValidInput = true;
-          } else if (catInput !== "") {
-            showPopup(`Invalid CAT mark for ${subject}. Must be 0-100.`, true);
-            return;
-          }
-        }
-
-        if (examInput) {
-          const examValue = parseInt(examInput);
-          if (examValue >= 0 && examValue <= 100) {
-            marks.exam[subject] = examValue;
-            hasValidInput = true;
-          } else if (examInput !== "") {
-            showPopup(`Invalid Exam mark for ${subject}. Must be 0-100.`, true);
-            return;
-          }
-        }
-
-        if (gradeInput) {
-          const gradeMatch = gradeInput.match(/^([A-F])([+-])?$/);
-          if (gradeMatch) {
-            marks.grades[subject] = gradeMatch[1] + (gradeMatch[2] || "");
-            hasValidInput = true;
-          } else {
-            showPopup(`Invalid grade format for ${subject}. Use A-F with optional + or -.`, true);
-            return;
-          }
-        }
-      }
-
-      if (!hasValidInput) {
-        showPopup("Please enter at least one valid mark or grade.", true);
-        return;
-      }
-
-      if (Object.keys(marks.cat).length === 0) delete marks.cat;
-      if (Object.keys(marks.exam).length === 0) delete marks.exam;
-      if (Object.keys(marks.grades).length === 0) delete marks.grades;
 
       try {
-        loadingScreen.classList.remove("hidden");
-        document.getElementById("uploadMarksBtn").disabled = true;
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+        let studentsList = [];
+        let updates = {};
+        let hasValidInput = false;
 
-        await db.ref(`users/students/${normalizedRegNo}/academics/${term}`).update(marks);
-        showPopup("Marks uploaded successfully to Firebase!", false);
-
-        subjects.forEach(subject => {
-          if (term !== "term3") document.getElementById(`cat_${subject}`).value = "";
-          document.getElementById(`exam_${subject}`).value = "";
-          document.getElementById(`grade_${subject}`).value = "";
+        Object.keys(students).forEach(regNo => {
+          const student = students[regNo];
+          if (student.form === form) {
+            studentsList.push({ regNo, name: student.profile.name, academics: student.academics || {} });
+          }
         });
 
-        document.getElementById("uploadMarksBtn").style.display = "none";
-        document.getElementById("editMarksBtn").style.display = "inline-block";
-        updateMarksForm();
+        for (const student of studentsList) {
+          const normalizedRegNo = student.regNo.replace(/\//g, "_");
+          const catInput = term !== "term3" ? document.getElementById(`cat_${normalizedRegNo}`)?.value : null;
+          const examInput = document.getElementById(`exam_${normalizedRegNo}`)?.value;
+          const gradeInput = document.getElementById(`grade_${normalizedRegNo}`)?.value.trim().toUpperCase();
+
+          // Fetch existing academics data for the term
+          const existingMarks = student.academics[term] || { cat: {}, exam: {}, grades: {} };
+
+          let studentMarks = {
+            cat: { ...existingMarks.cat },
+            exam: { ...existingMarks.exam },
+            grades: { ...existingMarks.grades }
+          };
+
+          if (catInput && term !== "term3") {
+            const catValue = parseInt(catInput);
+            if (catValue >= 0 && catValue <= 100) {
+              studentMarks.cat[subject] = catValue;
+              hasValidInput = true;
+            } else if (catInput !== "") {
+              showPopup(`Invalid CAT mark for ${student.name} in ${subject}. Must be 0-100.`, true);
+              return;
+            } else {
+              delete studentMarks.cat[subject]; // Remove if empty
+            }
+          }
+
+          if (examInput) {
+            const examValue = parseInt(examInput);
+            if (examValue >= 0 && examValue <= 100) {
+              studentMarks.exam[subject] = examValue;
+              hasValidInput = true;
+            } else if (examInput !== "") {
+              showPopup(`Invalid Exam mark for ${student.name} in ${subject}. Must be 0-100.`, true);
+              return;
+            } else {
+              delete studentMarks.exam[subject]; // Remove if empty
+            }
+          }
+
+          if (gradeInput) {
+            const gradeMatch = gradeInput.match(/^([A-F])([+-])?$/);
+            if (gradeMatch) {
+              studentMarks.grades[subject] = gradeMatch[1] + (gradeMatch[2] || "");
+              hasValidInput = true;
+            } else if (gradeInput !== "") {
+              showPopup(`Invalid grade format for ${student.name} in ${subject}. Use A-F with optional + or -.`, true);
+              return;
+            } else {
+              delete studentMarks.grades[subject]; // Remove if empty
+            }
+          }
+
+          if (Object.keys(studentMarks.cat).length === 0) delete studentMarks.cat;
+          if (Object.keys(studentMarks.exam).length === 0) delete studentMarks.exam;
+          if (Object.keys(studentMarks.grades).length === 0) delete studentMarks.grades;
+
+          if (Object.keys(studentMarks).length > 0) {
+            updates[`users/students/${normalizedRegNo}/academics/${term}`] = studentMarks;
+          }
+        }
+
+        if (!hasValidInput) {
+          showPopup("Please enter at least one valid mark or grade for any student.", true);
+          return;
+        }
+
+        loadingScreen.classList.remove("hidden");
+        document.getElementById("saveMarksBtn").disabled = true;
+
+        await db.ref().update(updates);
+        showPopup("Marks saved successfully!", false);
+        loadMarksForm();
       } catch (error) {
-        console.error("Upload marks error:", error);
-        showPopup(`Failed to upload marks: ${error.message}`, true);
+        console.error("Save marks error:", error);
+        showPopup(`Failed to save marks: ${error.message}`, true);
       } finally {
         loadingScreen.classList.add("hidden");
-        document.getElementById("uploadMarksBtn").disabled = false;
+        document.getElementById("saveMarksBtn").disabled = false;
       }
     }
 
@@ -1123,6 +1057,7 @@
       const type = document.getElementById("announcementType").value;
       const title = document.getElementById("announcementTitle").value.trim();
       const message = document.getElementById("announcementMessage").value.trim();
+      const teacherName = document.getElementById("teacherName").textContent;
 
       if (!title || !message) {
         showMessage("announcementsMessage", "Please enter both title and message.");
@@ -1225,6 +1160,7 @@
       const normalizedRegNo = regNo.replace(/\//g, "_");
       const teacherName = document.getElementById("teacherName").textContent;
       const date = new Date().toLocaleDateString();
+      const logoUrl = "https://uploads.onecompiler.io/42jd8ggps/43pkfwpts/bttc.jpg";
 
       loadingScreen.classList.remove("hidden");
       db.ref(`users/students/${normalizedRegNo}`).once("value", (snapshot) => {
@@ -1233,82 +1169,97 @@
         const totalPaid = Array.isArray(transactions) ? transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0) : 0;
         const balance = (student.fees?.totalExpected || 0) - totalPaid;
 
-        doc.text("Logo not available", 10, 15);
-        doc.setFontSize(14);
-        doc.setTextColor(107, 72, 255);
-        doc.text("BORABU TEACHERS TRAINING COLLEGE", 60, 20);
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text("P.O. Box 102-40502, Nyamira Keroka, Kenya", 60, 25);
-        doc.text(`Prepared by: ${teacherName}`, 10, 40);
-        doc.text(`Date: ${date}`, 160, 40);
-
-        doc.setFontSize(12);
-        doc.text("Student Profile", 10, 60);
-        const profileData = [
-          ["Reg No", regNo],
-          ["Name", student.profile?.name || "N/A"],
-          ["Gender", student.profile?.gender || "N/A"],
-          ["Religion", student.profile?.religion || "N/A"],
-          ["Year", student.form?.replace("form", "Year ") || "N/A"],
-          ["Stream", student.stream || "N/A"],
-          ["Phone", student.profile?.phone || "N/A"],
-          ["Email", student.profile?.email || "N/A"],
-          ["Emergency Contact", student.profile?.emergencyContact || "N/A"],
-          ["Parent Name", student.profile?.parentName || "N/A"],
-          ["Parent Phone", student.profile?.parentPhone || "N/A"],
-          ["Parent Email", student.profile?.parentEmail || "N/A"],
-          ["Parent Occupation", student.profile?.parentOccupation || "N/A"],
-          ["Parent Marital Status", student.profile?.parentMaritalStatus || "N/A"],
-          ["Guardian Relationship", student.profile?.guardianRelationship || "N/A"],
-          ["County", student.profile?.county || "N/A"],
-          ["Address", student.profile?.address || "N/A"],
-          ["Town", student.profile?.town || "N/A"]
-        ];
-        doc.autoTable({
-          startY: 70,
-          body: profileData,
-          theme: 'grid',
-          styles: { cellPadding: 3, fontSize: 11, lineColor: [0, 0, 0], lineWidth: 0.1 },
-          headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
-          bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
-          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 130 } }
-        });
-
-        const financialY = doc.autoTable.previous.finalY + 10;
-        doc.text("Financial Details", 10, financialY);
-        const financialData = [
-          ["Sponsor", student.fees?.sponsor || "N/A"],
-          ["Total Fees (KES)", student.fees?.totalExpected || "N/A"],
-          ["Fees Paid (KES)", totalPaid || "0"],
-          ["Balance (KES)", balance || "N/A"],
-          ["Admission Date", new Date().toLocaleDateString() || "N/A"],
-          ["Status", "Active" || "N/A"],
-          ["Remarks", "Good standing" || "N/A"]
-        ];
-        doc.autoTable({
-          startY: financialY + 5,
-          body: financialData,
-          theme: 'grid',
-          styles: { cellPadding: 3, fontSize: 11, lineColor: [0, 0, 0], lineWidth: 0.1 },
-          headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
-          bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
-          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 130 } }
-        });
-
-        const signatureY = doc.autoTable.previous.finalY + 10;
-        doc.setLineWidth(0.5);
-        doc.line(10, signatureY, 70, signatureY);
-        doc.text("Director of Studies", 10, signatureY + 5);
-        doc.text("Forged Signature (for demo purposes)", 10, signatureY + 10);
-
-        doc.save(`${regNo}_profile.pdf`);
-        loadingScreen.classList.add("hidden");
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = logoUrl;
+        img.onload = () => {
+          doc.addImage(img, "JPEG", 10, 10, 40, 40);
+          renderPDFContent(doc, teacherName, date, regNo, student, totalPaid, balance);
+          doc.save(`${regNo}_profile.pdf`);
+          loadingScreen.classList.add("hidden");
+        };
+        img.onerror = () => {
+          console.error("Failed to load logo");
+          doc.text("Logo not available", 10, 15);
+          renderPDFContent(doc, teacherName, date, regNo, student, totalPaid, balance);
+          doc.save(`${regNo}_profile.pdf`);
+          loadingScreen.classList.add("hidden");
+        };
       }).catch(error => {
         console.error("Download student PDF error:", error);
         showPopup(`Failed to generate PDF: ${error.message}`, true);
         loadingScreen.classList.add("hidden");
       });
+    }
+
+    function renderPDFContent(doc, teacherName, date, regNo, student, totalPaid, balance) {
+      doc.setFontSize(14);
+      doc.setTextColor(107, 72, 255);
+      doc.text("BORABU TEACHERS TRAINING COLLEGE", 60, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("P.O. Box 102-40502, Nyamira Keroka, Kenya", 60, 25);
+      doc.text(`Prepared by: ${teacherName}`, 10, 40);
+      doc.text(`Date: ${date}`, 160, 40);
+
+      doc.setFontSize(12);
+      doc.text("Student Profile", 10, 60);
+      const profileData = [
+        ["Reg No", regNo],
+        ["Name", student.profile?.name || "N/A"],
+        ["Gender", student.profile?.gender || "N/A"],
+        ["Religion", student.profile?.religion || "N/A"],
+        ["Year", student.form?.replace("form", "Year ") || "N/A"],
+        ["Stream", student.stream || "N/A"],
+        ["Phone", student.profile?.phone || "N/A"],
+        ["Email", student.profile?.email || "N/A"],
+        ["Emergency Contact", student.profile?.emergencyContact || "N/A"],
+        ["Parent Name", student.profile?.parentName || "N/A"],
+        ["Parent Phone", student.profile?.parentPhone || "N/A"],
+        ["Parent Email", student.profile?.parentEmail || "N/A"],
+        ["Parent Occupation", student.profile?.parentOccupation || "N/A"],
+        ["Parent Marital Status", student.profile?.parentMaritalStatus || "N/A"],
+        ["Guardian Relationship", student.profile?.guardianRelationship || "N/A"],
+        ["County", student.profile?.county || "N/A"],
+        ["Address", student.profile?.address || "N/A"],
+        ["Town", student.profile?.town || "N/A"]
+      ];
+      doc.autoTable({
+        startY: 70,
+        body: profileData,
+        theme: 'grid',
+        styles: { cellPadding: 3, fontSize: 11, lineColor: [0, 0, 0], lineWidth: 0.1 },
+        headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+        bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 130 } }
+      });
+
+      const financialY = doc.autoTable.previous.finalY + 10;
+      doc.text("Financial Details", 10, financialY);
+      const financialData = [
+        ["Sponsor", student.fees?.sponsor || "N/A"],
+        ["Total Fees (KES)", student.fees?.totalExpected || "N/A"],
+        ["Fees Paid (KES)", totalPaid || "0"],
+        ["Balance (KES)", balance || "N/A"],
+        ["Admission Date", new Date().toLocaleDateString() || "N/A"],
+        ["Status", "Active" || "N/A"],
+        ["Remarks", "Good standing" || "N/A"]
+      ];
+      doc.autoTable({
+        startY: financialY + 5,
+        body: financialData,
+        theme: 'grid',
+        styles: { cellPadding: 3, fontSize: 11, lineColor: [0, 0, 0], lineWidth: 0.1 },
+        headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+        bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 130 } }
+      });
+
+      const signatureY = doc.autoTable.previous.finalY + 10;
+      doc.setLineWidth(0.5);
+      doc.line(10, signatureY, 70, signatureY);
+      doc.text("Director of Studies", 10, signatureY + 5);
+      doc.text("Forged Signature (for demo purposes)", 10, signatureY + 10);
     }
 
     function downloadResultsPDF() {
@@ -1317,6 +1268,7 @@
       const form = document.getElementById("resultsYearSelect").value;
       const teacherName = document.getElementById("teacherName").textContent;
       const date = new Date().toLocaleDateString();
+      const logoUrl = "https://uploads.onecompiler.io/42jd8ggps/43pkfwpts/bttc.jpg";
 
       loadingScreen.classList.remove("hidden");
       db.ref("users/students").once("value", async (snapshot) => {
@@ -1341,59 +1293,74 @@
           return;
         }
 
-        doc.text("Logo not available", 10, 15);
-        doc.setFontSize(14);
-        doc.setTextColor(107, 72, 255);
-        doc.text("BORABU TEACHERS TRAINING COLLEGE", 150, 20, { align: 'center' });
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text("P.O. Box 102-40502, Nyamira Keroka, Kenya", 150, 25, { align: 'center' });
-        doc.text(`Prepared by: ${teacherName}`, 10, 40);
-        doc.text(`Date: ${date}`, 280, 40);
-
-        const tableData = studentsList.map(student => {
-          const row = [student.regNo, student.name, student.stream];
-          subjects.forEach(subject => {
-            let mark = "-";
-            ["term1", "term2", "term3"].forEach(term => {
-              const examMark = student.academics[term]?.exam?.[subject];
-              if (examMark !== undefined && examMark !== "-") mark = examMark;
-            });
-            row.push(mark);
-          });
-          return row;
-        });
-
-        doc.autoTable({
-          head: [["Reg No", "Name", "Stream", ...subjects]],
-          body: tableData,
-          startY: 50,
-          theme: 'grid',
-          styles: { cellPadding: 2, fontSize: 8, lineColor: [0, 0, 0], lineWidth: 0.1 },
-          headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
-          bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
-          columnStyles: { 
-            0: { cellWidth: 20 }, 
-            1: { cellWidth: 40 }, 
-            2: { cellWidth: 20 }, 
-            ...subjects.reduce((acc, sub, i) => ({ ...acc, [i + 3]: { cellWidth: 10 } }), {}) 
-          },
-          margin: { top: 50 }
-        });
-
-        const signatureY = doc.autoTable.previous.finalY + 10;
-        doc.setLineWidth(0.5);
-        doc.line(10, signatureY, 70, signatureY);
-        doc.text("Director of Studies", 10, signatureY + 5);
-        doc.text("Forged Signature (for demo purposes)", 10, signatureY + 10);
-
-        doc.save(`results_${form.replace("form", "Year")}_${date}.pdf`);
-        loadingScreen.classList.add("hidden");
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = logoUrl;
+        img.onload = () => {
+          doc.addImage(img, "JPEG", 10, 10, 40, 40);
+          renderResultsPDFContent(doc, teacherName, date, form, studentsList);
+          doc.save(`results_${form.replace("form", "Year")}_${date}.pdf`);
+          loadingScreen.classList.add("hidden");
+        };
+        img.onerror = () => {
+          console.error("Failed to load logo");
+          doc.text("Logo not available", 10, 15);
+          renderResultsPDFContent(doc, teacherName, date, form, studentsList);
+          doc.save(`results_${form.replace("form", "Year")}_${date}.pdf`);
+          loadingScreen.classList.add("hidden");
+        };
       }).catch(error => {
         console.error("Download results PDF error:", error);
         showPopup(`Failed to generate PDF: ${error.message}`, true);
         loadingScreen.classList.add("hidden");
       });
+    }
+
+    function renderResultsPDFContent(doc, teacherName, date, form, studentsList) {
+      doc.setFontSize(14);
+      doc.setTextColor(107, 72, 255);
+      doc.text("BORABU TEACHERS TRAINING COLLEGE", 150, 20, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("P.O. Box 102-40502, Nyamira Keroka, Kenya", 150, 25, { align: 'center' });
+      doc.text(`Prepared by: ${teacherName}`, 10, 40);
+      doc.text(`Date: ${date}`, 280, 40);
+
+      const tableData = studentsList.map(student => {
+        const row = [student.regNo, student.name, student.stream];
+        subjects.forEach(subject => {
+          let mark = "-";
+          ["term1", "term2", "term3"].forEach(term => {
+            const examMark = student.academics[term]?.exam?.[subject];
+            if (examMark !== undefined && examMark !== "-") mark = examMark;
+          });
+          row.push(mark);
+        });
+        return row;
+      });
+
+      doc.autoTable({
+        head: [["Reg No", "Name", "Stream", ...subjects]],
+        body: tableData,
+        startY: 50,
+        theme: 'grid',
+        styles: { cellPadding: 2, fontSize: 8, lineColor: [0, 0, 0], lineWidth: 0.1 },
+        headStyles: { fillColor: [107, 72, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+        bodyStyles: { alternateRowStyles: { fillColor: [245, 245, 245] } },
+        columnStyles: { 
+          0: { cellWidth: 20 }, 
+          1: { cellWidth: 40 }, 
+          2: { cellWidth: 20 }, 
+          ...subjects.reduce((acc, sub, i) => ({ ...acc, [i + 3]: { cellWidth: 10 } }), {}) 
+        },
+        margin: { top: 50 }
+      });
+
+      const signatureY = doc.autoTable.previous.finalY + 10;
+      doc.setLineWidth(0.5);
+      doc.line(10, signatureY, 70, signatureY);
+      doc.text("Director of Studies", 10, signatureY + 5);
+      doc.text("Forged Signature (for demo purposes)", 10, signatureY + 10);
     }
 
     function downloadResultsExcel() {
@@ -1461,7 +1428,7 @@
     function logout() {
       auth.signOut().then(() => {
         localStorage.clear();
-        window.location.href = "index.html";
+        window.location.href = "index_teacher.html";
       }).catch(error => {
         console.error("Logout failed:", error);
         showPopup(`Failed to log out: ${error.message}`, true);
